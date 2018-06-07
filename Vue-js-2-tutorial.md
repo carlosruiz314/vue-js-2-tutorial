@@ -656,3 +656,102 @@ From the parent, we then pass the information using the `ninjas` prop within the
   </div>
 </template>
 ```
+
+### Validation
+We may also add validation to `props`. For instance, since we require the `ninjas` prop and expect it to be an `Array`, we can check for that:
+
+```html
+<script>
+export default {
+    props: {
+        ninjas: {
+            type: Array // We are expecting 'ninjas' to be an Array,
+            required: true
+        }
+    },
+    data () {
+        return {
+        }
+    },
+    methods: {
+    }
+}
+</script>
+```
+
+## 23. Primitive vs Reference types
+Primitive types:
+- Strings
+- Numbers
+- Booleans
+
+Reference types:
+- Objects
+- Arrays
+
+If we pass a reference type to another component as a prop, we're passing a **reference** to the original data (not a copy of that data). Therefore, if we edit the data we pass through the prop, the original data will be updated.
+
+If we pass a primitive type as a prop, it is passed as a value, and thus any modifications will only update the data locally to that component, and will not be reflected across all components.
+
+## 24. Events (child to parent)
+We can use events to pass data from a child component to a parent component in reaction to an event (such as a click event).
+
+Therefore, we can use it if we want to replicate the behavior of reference types by passing back modified primitive data to the root component.
+
+To define a custom event, we have to $emit it from the nested component:
+
+```html
+<script>
+export default {
+    props: {
+      title: { // We receive the prop from the parent
+        type: String,
+        required: true
+      }
+    },
+    data(){
+        return{
+        }
+    },
+    methods: {
+      changeTitle: function(){
+        this.$emit('changeTitle', 'Vue Ninjas');
+        // We use $emit to create a custom event called 'changeTitle', and we pass data ('Vue Ninjas') as a parameter, so that the root component might be able to read that information
+      }
+    }
+}
+</script>
+```
+
+From the parent, we are listening for that event to occur, and we fire a method whenever the condition is satisfied. In this case, the method is `updateTitle($event)`, where `$event` is a placeholder for the parameter data that is passed from within the child to the parent (`'Vue Ninjas'`):
+
+```html
+<template>
+    <div>
+        <app-header v-bind:title="title" v-on:changeTitle="updateTitle($event)"></app-header> <!-- We are listening for changeTitle in the app-header component, and whenever it happens, we fire updateTitle($event) -->
+        <app-footer v-bind:title="title"></app-footer>
+    </div>
+</template>
+<script>
+// Imports
+import Header from './components/Header.vue';
+import Footer from './components/Footer.vue';
+import Ninjas from './components/Ninjas.vue';
+export default {
+    components: {
+        'app-header': Header,
+        'app-footer': Footer
+    },
+    data () {
+        return {
+            title: 'Vue Wizards'
+        }
+    },
+    methods: {
+      updateTitle: function(updatedTitle){
+        this.title = updatedTitle; // Here, updatedTitle refers to the $event parameter we received from the changeTitle custom event
+      }
+    }
+}
+</script>
+```
