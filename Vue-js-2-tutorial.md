@@ -755,3 +755,281 @@ export default {
 }
 </script>
 ```
+
+## 25. The Event Bus
+The event bus is a Vue instance which can emit and listen to events. This is useful for creating direct component to component data transfer.
+
+We create the event bus and `import` it into the components we want to communicate.
+
+Then, we `$emit` an event through the `bus` in the corresponding component:
+
+```html
+<script>
+// imports
+import { bus } from '../main'; // Import the bus
+export default {
+    props: {
+    },
+    data(){
+        return{
+        }
+    },
+    methods: {
+      changeTitle: function(){ // Change the title here and emit the event to other components
+        this.title = 'Vue Ninjas';
+        bus.$emit('titleChanged', 'Vue Ninjas');
+      }
+    }
+}
+</script>
+```
+
+... and we capture it in the target component with `created()`, which fires anything in it when the component is first created:
+
+```html
+<script>
+// imports
+import { bus } from '../main';
+export default {
+    props: {
+      title: {
+        type: String,
+        required: true
+      }
+    },
+    data(){
+        return{
+        }
+    },
+    created(){
+        bus.$on('titleChanged', (data) => {
+            this.title = data;
+        });
+    }
+}
+</script>
+```
+
+## 26. Life-cycle Hooks
+
+https://vuejs.org/v2/guide/instance.html#Instance-Lifecycle-Hooks
+
+## 27. Slots
+We can pass down a HTML template using slots. The usefulness of slots comes from being able to reuse the structure of a child component while changing the input from the root component. In this example, we are using slots to pass a HTML template for a form:
+
+In the root component we have all the content we want to pass to the form:
+```html
+<template>
+  <div>
+      <form-helper>
+          <div slot="form-header">
+              <h3>This is the title of the form</h3>
+              <p>Information about the form</p>
+          </div>
+          <div slot="form-fields">
+            <input type="text" placeholder="name" required />
+            <input type="password" placeholder="password" required />
+          </div>
+          <div slot="form-controls">
+              <button v-on:click="handleSubmit">Submit</button>
+          </div>
+      </form-helper>
+  </div>
+</template>
+```
+
+The child component lays out the structure of the form with `slot`:
+```html
+<template >
+  <div>
+      <h1>Please fill out our form...</h1>
+      <form>
+          <div id="form-header">
+              <slot name="form-header"></slot>
+          </div>
+          <div id="form-fields">
+              <slot name="form-fields"></slot>
+          </div>
+          <div id="form-controls">
+              <slot name="form-controls"></slot>
+          </div>
+          <div id="useful-links"></div>
+            <ul>
+                <li><a href="#">Link 1</a></li>
+                <!-- ... -->
+            </ul>
+          </div>
+      </form>
+  </div>
+</template>
+```
+
+## 28. Dynamic components
+Dynamic components allow us to dynamically change which component is output to the browser.
+
+By using `component is=` along with `v-bind`, we can dynamically set the component that is being displayed.
+
+Furthermore, if we want to preserve the contents of the component when switching to another one, we can use the `<keep-alive>` tag:
+
+```html
+<template>
+  <div>
+      <keep-alive>
+          <component v-bind:is="component"></component>
+      </keep-alive>
+      <button v-on:click="component = 'form-one'">Show form one</button>
+      <button v-on:click="component = 'form-two'">Show form two</button>
+  </div>
+</template>
+
+<script>
+import formOne from './components/formOne.vue'
+import formTwo from './components/formTwo.vue'
+
+export default {
+  components: {
+      'form-one': formOne,
+      'form-two': formTwo
+  },
+  data () {
+    return {
+        component: 'form-one'
+    }
+  },
+  methods: {
+  }
+}
+</script>
+```
+
+## 30. Check Box Binding
+
+```html
+<div>
+    <label>Item 1</label>
+    <input type="checkbox" value="item 1" v-model="blog.categories"/>
+    <label>Item 2</label>
+    <input type="checkbox" value="item 2" v-model="blog.categories"/>
+    <!-- Whenever an option is (de)selected, blog.categories is updated with the currently selected data. -->
+</div>
+<!-- ... -->
+<script>
+    export default {
+        data () {
+            return {
+                blog: {
+                    categories: []
+                }
+            }
+        }
+    }
+</script>
+```
+
+## 31. Select Box Binding
+
+```html
+<div>
+    <select v-model="blog.author">
+        <option v-for="author in authors">{{ author }}
+    </select>
+    <!-- Whenever an option is (de)selected, blog.author is updated with the currently selected data. -->
+</div>
+<!-- ... -->
+<script>
+    export default {
+        data () {
+            return {
+                blog: {
+                    author: ""
+                },
+                authors: ['Author 1', 'Author 2']
+            }
+        }
+    }
+</script>
+```
+
+## 32. HTTP Requests
+First, install `vue-resource`: `npm install vue-resource`
+
+Now, let's make a `POST` `HTTP` request:
+We use the `then()` method to fire whatever function is in the method once the `POST` request has been completed, since `POST` returns a promise.
+
+```javascript
+data() {
+    return {
+        blog: {
+            title: "",
+            content: "",
+            categories: [],
+            author: ""
+        }
+    }
+},
+methods: {
+    post() {
+        this.$http.post('http://jsonplaceholder.typicode.com/posts', {
+            title: this.blog.title,
+            body: this.blog.content,
+            userId: 1
+        }).then(function(data) {
+            console.log(data);
+        });
+    }
+}
+```
+
+## 33. GET Requests
+In this case, we will be using the `created()` life-cycle hook in order to populate the child component with the items retrieved in the `HTTP` `GET` request:
+
+```javascript
+export default {
+    data() {
+        return {
+            blogs: []
+        }
+    },
+    methods: {
+    },
+    created() {
+        this.$http.get('https://jsonplaceholder.typicode.com/posts').then(function(data) {
+            console.log(data);
+            this.blogs = data.body.slice(0, 10); // This returns first 10 elements of the data array.
+        })
+    }
+}
+```
+
+## 34. Custom directives
+We are going to create a custom global directive called `rainbow` that will give a random color to the element it is applied to:
+
+```javascript
+Vue.directive('rainbow', {
+    bind(el, binding, vnode) {
+        el.style.color = "#" + Math.random().toString.slice(2:8);
+    } // This fires whenever the directive is bound to an element
+});
+```
+
+The `bind()` function is fired whenever the directive is bound to an element.
+
+We are now creating the `theme` directive, which will decide whether the theme of the website is `narrow` or `wide`, with the option of displaying items in a column fashion:
+
+```javascript
+Vue.directive('theme', {
+    bind(el, binding, vnode) {
+        if (binding.value == 'wide'){
+            el.style.maxWidth = "1200px"
+        } else if (binding.value == 'narrow'){
+            el.style.maxWidth = "560px"
+        }
+        if binding.arg == 'column'{
+            el.style.background = "#ddd";
+            el.style.padding = "20px";
+        }
+    }
+});
+```
+
+## 35. Filters
