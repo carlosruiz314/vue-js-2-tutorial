@@ -1033,3 +1033,279 @@ Vue.directive('theme', {
 ```
 
 ## 35. Filters
+We can use filters to change the output of data to the browser.
+
+Filters do not actually the data directly. They only change the output to the browser.
+
+If we want to use a custom filter named `to-uppercase` and use it, we would do it like this:
+
+`{{ expression | to-uppercase }}`
+
+In order to create the custom filter, we would do the following:
+
+```javascript
+Vue.filter('to-uppercase', function(value){ // Value refers to the data the filter is used on.
+    return value.toUppercase()
+});
+```
+
+## 36. Custom Search Filter
+We are going to implement a custom search field using computed properties.
+
+We design a showBlogs component that displays the array of existing blogs:
+```html
+<template>
+    <div id="show-blogs">
+        <h1>All Blog Articles</h1>
+        <input type="text" v-model="search" placeholder="search blogs" />
+        <div v-for="blog in filteredBlogs" class="single-blog">
+            <h2>{{ blog.title | to-uppercase }}</h2>
+            <article>{{ blog.body }}</article>
+        </div>
+    </div>
+</template>
+
+<script>
+export default {
+    data () {
+        return {
+            blogs: [],
+            search: ''
+        }
+    },
+    methods: {
+    },
+    created() {
+        this.$http.get('http://jsonplaceholder.typicode.com/posts').then(function(data){
+            this.blogs = data.body.slice(0,10);
+        });
+    },
+    computed: {
+        filteredBlogs: function(){
+            return this.blogs.filter((blog) => {
+                return blog.title.match(this.search); // 2-way data binding with v-model enables dynamic filtering as the user types
+            });
+        }
+    }
+}
+</script>
+
+<style>
+#show-blogs{
+    max-width: 800px;
+    margin: 0px auto;
+}
+.single-blog{
+    padding: 20px;
+    margin: 20px 0;
+    box-sizing: border-box;
+    background: #eee;
+}
+</style>
+```
+
+## 37. Registering Things Locally (vs Globally)
+
+```html
+<script>
+export default {
+    data () {
+        return {
+            blogs: [],
+            search: ''
+        }
+    },
+    methods: {
+    },
+    created() {
+
+    },
+    computed: {
+
+    },
+    filters: { // Filters in here are registered locally to the component
+        // Instead of the string 'to-uppercase', we are using toUppercase
+        toUppercase(value){
+            return value.toUpperCase();
+        },
+        // We could also do this, although it looks dirtier. Both are equivalent:
+        'to-uppercase': function(value){
+            return value.toUpperCase();
+        }
+    },
+    directives: {
+        'rainbow': {
+            bind(el, binding, vnode){
+                el.style.color = "#" + Math.random().toString.slice(2:8);
+            }
+        }
+    }
+}
+</script>
+```
+
+## 38. Mixins
+Mixins are reusable pieces of code that we can use to implement the same functionality across several components.
+
+We create a new mixin in a javascript file:
+```javascript
+export default {
+    computed: {
+        filteredBlogs: function(){
+            return this.blogs.filter((blog) => {
+                return blog.title.match(this.search); // 2-way data binding with v-model enables dynamic filtering as the user types
+            });
+        }
+    }
+}
+```
+
+... and then import it into the corresponding component.
+```html
+<script>
+import searchMixin from ../mixins/searchMixin;
+export default {
+    data () {
+        return {
+            blogs: [],
+            search: ''
+        }
+    },
+    methods: {
+    },
+    created() {
+        this.$http.get('http://jsonplaceholder.typicode.com/posts').then(function(data){
+            this.blogs = data.body.slice(0,10);
+        });
+    },
+    computed: {
+
+    },
+    mixins: [searchMixin] // We need to register the mixin in the component
+}
+</script>
+```
+
+## 39. Setting up Routing
+We will have to install a 3rd party package:
+
+    `npm install vue-router --save`.
+
+We can create the routes in a separate file and export an array of objects with the routes:
+
+```javascript
+import showBlogs from './components/showBlogs.vue';
+import addBlog from './components/addBlog.vue';
+export default [
+    // Route to homepage with the component you want to show
+    { path: '/', component: showBlogs },
+    {path: '/add', component: addBlog }
+]
+```
+
+In order to use `VueRouter` we need to instantiate it, assign the routes and include the router instance into the Vue instance:
+
+```javascript
+import VueRouter from 'vue-router'
+import Routes from './routes'
+Vue.use(VueRouter);
+
+const router = new VueRouter({ // We need to pass an object with the routes
+    routes: Routes
+});
+
+// Now we need to tell Vue we want to use this Vue router in the Vue instance:
+
+new Vue({
+    el: '#app',
+    render: h => h(App),
+    router: router
+})
+```
+
+After this, we should replace the components with the `<router-view>` tag to make the router handle the URLs for the HTTP requests:
+
+```html
+<template>
+    <div>
+        <router-view></router-view>
+    </div>
+</template>
+```
+
+## 40. Hash vs History (Routing)
+The history routing mode yields cleaner URLs than the hash mode we were using in the previous lesson.
+
+With hashes, we are not making requests to the server, but rather being redirected to other parts of the webpage.
+
+We need to set up the server in order to always return the `index.html` file regardless of what contents we type in after the first forward slash `/` in the URL of our webpage.
+
+Here is some documentation regarding HTML5 History Mode in Vue: https://router.vuejs.org/guide/essentials/history-mode.html#example-server-configurations
+
+## 41. Adding Router Links
+We are going to create a component for a header with links that redirect the user to different components of the webpage:
+
+```html
+<template>
+    <nav>
+        <ul>
+            <li><router-link to="/" exact>Blog</router-link></li>
+            <li><router-link to="/add" exact>Add a New Blog</router-link></li>
+        </ul>
+    </nav>
+</template>
+
+<script>
+    export default {}
+</script>
+<style scoped>
+</style>
+```
+
+We are using the `<router-link>` tag, which is provided by `vue-router`. It is faster than an anchor tag `<a>` with an `href`, since it intercepts the click event so that the page is not reloaded.
+
+We also use the `exact` property in those elements. This means that the class will only be `router-link-active` if the URL matches the `to=""` argument **exactly**, and not **contains** said argument. Without this property, `/add` URL would be active for both elements, since /add contains / and also /add, which are the two to="" arguments of the router-links above.
+
+## 42. Route Parameters
+If we want to set up a route parameter for one of our routes, we should go to our routes file and add the following:
+
+```javascript
+{ path: '/blog/:id', component: singleBlog }
+```
+
+Where `:id` is the route parameter.
+
+So, we have to create the singleBlog component, that will load a single blog item depending on the id parameter that has been passed in the route:
+
+```html
+<template>
+    <div id="single-blog">
+        <h1>{{ blog.title }}</h1>
+        <article>{{ blog.body }}</article>
+    </div>
+</template>
+
+<script>
+    export default {
+        data() {
+            return {
+                id: this.$route.params.id,
+                blog: {}
+            }
+        },
+        created() {
+            this.$http.get('http://jsonplaceholder.typicode.com/posts/' + this.id).then(function(data){
+                this.blog = data.body;
+            })
+        }
+    }
+</script>
+```
+
+Now, we want the user to be able to click a single blog post and be redirected there, instead of having to modify the requests directly in the URL:
+
+```html
+<div v-for="blog in filteredBlogs" class="single-blog">
+    <router-link v-bind:to="'/blog/' + blog.id"><h2>{{ blog.title | to-uppercase }}</h2></router-link>
+</div>
+```
